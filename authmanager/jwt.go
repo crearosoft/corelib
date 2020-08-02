@@ -47,10 +47,6 @@ func GenerateToken(loginID string, ExpiresAt int64) (string, error) {
 }
 
 func decode(token *jwt.Token, err error) (jwt.MapClaims, error) {
-	if err != nil {
-		// loggermdl.LogError("Error while parsing JWT Token: ", err)
-		return nil, err
-	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {

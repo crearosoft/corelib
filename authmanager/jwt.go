@@ -3,7 +3,7 @@ package authmanager
 import (
 	"time"
 
-	"github.com/Crearosoft/corelib/loggermanager"
+	"github.com/crearosoft/corelib/loggermanager"
 
 	jwt "github.com/dgrijalva/jwt-go"
 )

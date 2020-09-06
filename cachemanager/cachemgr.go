@@ -9,7 +9,11 @@ package cachemanager
 // Package cachemdl will help cache object into memory. It Uses LRU algo
 
 import (
+	"encoding/json"
+	"os"
 	"time"
+
+	"github.com/crearosoft/corelib/loggermanager"
 
 	"github.com/patrickmn/go-cache"
 )
@@ -64,6 +68,65 @@ func SetupCache(opts ...cacheOption) *CacheHelper {
 
 	fc.Cache = cache.New(fc.Expiration, fc.CleanupTime)
 	return fc
+}
+
+// SaveFile is the
+func (cacheHelper *CacheHelper) SaveFile(fname string) error {
+	f, err := os.OpenFile(fname, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	itm := cacheHelper.GetItems()
+	b, err := json.Marshal(itm)
+	if err != nil {
+		return loggermanager.Wrap("Error while marshalling the data")
+	}
+	if _, err = f.Write(b); err != nil {
+		return loggermanager.Wrap("Error while writing the data to file")
+	}
+	return nil
+}
+
+// LoadFile to load saved file
+func (cacheHelper *CacheHelper) LoadFile(fname string) error {
+	const BufferSize = 100
+	file, err := os.Open(fname)
+
+	defer file.Close()
+	if err != nil {
+		return loggermanager.Wrap("Error while reading file")
+	}
+	// buffer := make([]byte, BufferSize)
+	// // bytesread
+	// for {
+	// 	_, err := file.Read(buffer)
+
+	// 	if err != nil {
+	// 		if err != io.EOF {
+	// 			fmt.Println(err)
+	// 		}
+	// 		break
+	// 	}
+	// }
+	itm := make(map[string]cache.Item, 0)
+
+	dec := json.NewDecoder(file)
+	// dec := json.NewDecoder(strings.NewReader(string(buffer)))
+	// if err := json.Unmarshal(buffer, &itm); err != nil {
+	if err = dec.Decode(&itm); err != nil {
+		// log.Fatal(err)
+		nc := cache.New(cacheHelper.Expiration, cacheHelper.CleanupTime)
+		cacheHelper.Cache = nc
+		loggermanager.LogError("Error while binding the data from file")
+		return loggermanager.Wrap("Error while binding the data from file")
+	}
+
+	nc := cache.NewFrom(cacheHelper.Expiration, cacheHelper.CleanupTime, itm)
+	cacheHelper.Cache = nc
+	// fmt.Println(string(buffer))
+	// cacheHelper.Cache.Load
+	return nil
 }
 
 // Get -

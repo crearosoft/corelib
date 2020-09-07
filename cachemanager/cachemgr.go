@@ -11,6 +11,7 @@ package cachemanager
 import (
 	"encoding/json"
 	"os"
+	"path"
 	"time"
 
 	"github.com/crearosoft/corelib/loggermanager"
@@ -72,7 +73,15 @@ func SetupCache(opts ...cacheOption) *CacheHelper {
 
 // SaveFile is the
 func (cacheHelper *CacheHelper) SaveFile(fname string) error {
-	f, err := os.OpenFile(fname, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
+	_, err := os.Stat(fname)
+	if os.IsNotExist(err) {
+		dir, _ := path.Split(fname)
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+	f, err := os.OpenFile(fname, os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
 		panic(err)
 	}

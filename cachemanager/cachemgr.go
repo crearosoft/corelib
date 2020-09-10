@@ -81,7 +81,7 @@ func (cacheHelper *CacheHelper) SaveFile(fname string) error {
 			panic(err)
 		}
 	}
-	f, err := os.OpenFile(fname, os.O_TRUNC|os.O_CREATE, 0644)
+	f, err := os.OpenFile(fname, os.O_TRUNC|os.O_CREATE, 0777)
 	if err != nil {
 		panic(err)
 	}

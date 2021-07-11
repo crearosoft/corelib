@@ -27,9 +27,9 @@ import (
 
 const (
 	noExp time.Duration = 0
-	ctx = context.Background
 	keySplitter = ":"
 )
+var ctx = context.Background()
 
 // RedisCache represents a Redis client with provided configuration. Do not change configuration at runtime.
 type RedisCache struct {
@@ -166,7 +166,7 @@ func (rc *RedisCache) Set(key string, val interface{}) {
 		return
 	}
 
-	rc.cli.SetNX(ctx,rc.key(key), ba, rc.Expiration)
+	rc.cli.Set(ctx,rc.key(key), ba, rc.Expiration)
 }
 
 // SetWithExpiration marshalls provided value and stores against provided key for given duration. Errors will be logged to initialized logger.
@@ -177,7 +177,7 @@ func (rc *RedisCache) SetWithExpiration(key string, val interface{}, exp time.Du
 		return
 	}
 
-	rc.cli.SetNX(ctx,rc.key(key), ba, exp)
+	rc.cli.Set(ctx,rc.key(key), ba, exp)
 }
 
 // SetNoExpiration marshalls provided value and stores against provided key.
@@ -189,7 +189,7 @@ func (rc *RedisCache) SetNoExpiration(key string, val interface{}) {
 		return
 	}
 
-	rc.cli.Set(ctx,rc.key(key), ba)
+	rc.cli.Set(ctx,rc.key(key), ba, noExp)
 }
 
 // Get returns data against provided key. Returns false if not present.

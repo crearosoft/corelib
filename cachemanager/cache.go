@@ -7,6 +7,7 @@ import (
 const (
 	// TypeCache indicates fast cache as cache storage
 	TypeCache = iota + 1
+	TypeRedisCache
 )
 
 // Cache provides access to underlying cache, make sure all caches implement these methods.

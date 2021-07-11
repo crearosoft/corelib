@@ -19,7 +19,7 @@ import (
 	"log"
 	"strings"
 	"time"
-
+	"context"
 	"github.com/crearosoft/corelib/loggermanager"
 
 	"github.com/go-redis/redis/v8"
@@ -27,7 +27,7 @@ import (
 
 const (
 	noExp time.Duration = 0
-
+	ctx = context.Background
 	keySplitter = ":"
 )
 
@@ -103,7 +103,7 @@ func (rc *RedisCache) Setup(addr, password, prefix string, db int, exp time.Dura
 	rc.opt = &opt
 	rc.cli = redis.NewClient(&opt)
 
-	if _, err := rc.cli.Ping().Result(); err != nil {
+	if _, err := rc.cli.Ping(ctx).Result(); err != nil {
 		// exit if connection to redis server fails
 		loggermanager.LogError("connection to redis server failed: ", err)
 		log.Fatal("connection to redis server failed: ", err)
@@ -143,7 +143,7 @@ func SetupRedisCache(opts ...redisOption) (*RedisCache, error) {
 
 	rc.cli = redis.NewClient(rc.opt)
 
-	if _, err := rc.cli.Ping().Result(); err != nil {
+	if _, err := rc.cli.Ping(ctx).Result(); err != nil {
 
 		return nil, errors.New("connection to redis server failed: " + err.Error())
 	}
@@ -166,7 +166,7 @@ func (rc *RedisCache) Set(key string, val interface{}) {
 		return
 	}
 
-	rc.cli.Set(rc.key(key), ba, rc.Expiration)
+	rc.cli.SetNX(ctx,rc.key(key), ba, rc.Expiration)
 }
 
 // SetWithExpiration marshalls provided value and stores against provided key for given duration. Errors will be logged to initialized logger.
@@ -177,7 +177,7 @@ func (rc *RedisCache) SetWithExpiration(key string, val interface{}, exp time.Du
 		return
 	}
 
-	rc.cli.Set(rc.key(key), ba, exp)
+	rc.cli.SetNX(ctx,rc.key(key), ba, exp)
 }
 
 // SetNoExpiration marshalls provided value and stores against provided key.
@@ -189,14 +189,14 @@ func (rc *RedisCache) SetNoExpiration(key string, val interface{}) {
 		return
 	}
 
-	rc.cli.Set(rc.key(key), ba, noExp)
+	rc.cli.Set(ctx,rc.key(key), ba)
 }
 
 // Get returns data against provided key. Returns false if not present.
 func (rc *RedisCache) Get(key string) (interface{}, bool) {
 
 	// Get returns error if key is not present.
-	val, err := rc.cli.Get(rc.key(key)).Result()
+	val, err := rc.cli.Get(ctx,rc.key(key)).Result()
 	if err != nil {
 		loggermanager.LogError("error getting key", key, "from redis cache with error:", err)
 		return nil, false
@@ -207,7 +207,7 @@ func (rc *RedisCache) Get(key string) (interface{}, bool) {
 
 // Delete -
 func (rc *RedisCache) Delete(key string) {
-	rc.cli.Del(rc.key(key)).Result()
+	rc.cli.Del(ctx,rc.key(key)).Result()
 }
 
 // GetItemsCount -
@@ -222,7 +222,7 @@ func (rc *RedisCache) GetItemsCount() int {
 }
 
 func (rc *RedisCache) flushDB() (string, error) {
-	return rc.cli.FlushDB().Result()
+	return rc.cli.FlushDB(ctx).Result()
 }
 
 // Purge deletes for current redis db
@@ -286,7 +286,7 @@ func (rc *RedisCache) GetAll() map[string]interface{} {
 	result := make(map[string]interface{}, len(keys))
 
 	for i := range keys {
-		ba, err := rc.cli.Get(keys[i]).Bytes()
+		ba, err := rc.cli.Get(ctx,keys[i]).Bytes()
 		if err != nil {
 			loggermanager.LogError("error getting key", keys[i], "from redis cache with error:", err)
 			continue
@@ -304,7 +304,7 @@ func (rc *RedisCache) GetAll() map[string]interface{} {
 // GetItemsCount -
 func (rc *RedisCache) keys() []string {
 	pattern := rc.Prefix + "*"
-	keys, err := rc.cli.Keys(pattern).Result()
+	keys, err := rc.cli.Keys(ctx,pattern).Result()
 	if err != nil {
 		loggermanager.LogError("error getting item count for ", pattern, " error: ", err)
 	}
